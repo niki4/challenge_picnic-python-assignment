@@ -1,0 +1,19 @@
+---
+version: "3"
+
+services:
+  picnic-interview-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PICNIC_SERVER_URL=http://picnic-interview-server:80
+    depends_on:
+      - picnic-interview-server
+    command: ["100", "30"] # 100 messages, 30 seconds.
+  picnic-interview-server:
+    image: "teampicnic/python-interview-server:0.2.0"
+    volumes:
+      - ./picnic-assignment/mount-my-scenarios:/code/app/resources/mounted-scenarios
+    ports:
+      - "8000:80"
