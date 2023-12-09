@@ -14,40 +14,78 @@ You can even rewrite / remove this docstring here.
 """
 
 import os
-import requests
+import json
 import sys
+from typing import List, Dict, Any
+
+import requests
 
 from picnic.assignment.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 
 
 def request_url(target_url: str) -> str:
     """Execute an HTTP request to a target URL."""
-    resp = requests.get(target_url)
-    print("DEBUG", "-"*10)
-    print("DEBUG Server response:", resp.text)
-    print("DEBUG", "-"*10)
-    return f"Data from {target_url}."
+    response = requests.get(target_url)
+    return response
+
+
+def parse_server_response(raw_data: str) -> List[Dict[Any, Any]]:
+    """Parses server response containing Events data.
+
+    Each event comprises a single line of JSON.
+    Events are separated by a newline ('\n').
+    Not an event: Keep-alive messages consisting of a single '\n' may be sent.
+
+    Returns a list of parsed JSON events.
+    """
+    result = []
+    events = raw_data.split(sep="\n")
+
+    data = [event for event in events if event != ""]
+    if not data:
+        return result
+
+    for event in data:
+        try:
+            parsed_event = json.loads(event)
+        except ValueError as exc:
+            print(f"DEBUG cannot parse {event}:", exc)
+            continue
+        result.append(parsed_event)
+
+    return result
 
 
 def write_in_file(text: str, file_path: str) -> None:
     """Write a text in a file."""
     with open(file_path, "w") as file:
-        file.write(f"Writing {len(text)} characters to file {file_path}...")
+        print(f"Writing {len(text)} characters to file {file_path}...")
+        file.write(text)
 
 
-def main(max_events: int, max_time: int, target_server: str, output_file: str) -> None:
-    """You can implement your solution."""
-    sparkle_emoji = "\U00002728"
-    cookie_emoji = "\U0001F36A"
-    print(f"Please implement me. {sparkle_emoji}{cookie_emoji}{sparkle_emoji}")
+def main(max_events: int, max_time: int, target_server: str, output_filename: str) -> None:
+    """Main function that handles requests to server, parsing and handling
+    events data.
+    """
+
     try:
-        data = request_url(target_server)
-        write_in_file(data, output_file)
-    except Exception:
-        print("Oh noo, it's not yet working!")
+        response = request_url(target_server)
+
+        input_data = parse_server_response(response.text)
+        print("DEBUG Parsed Server response (list of json's):", input_data)
+        print("DEBUG", "-"*10)
+
+        output_data: str = json.dumps(input_data)
+        print("DEBUG output_data:", output_data)
+
+        write_in_file(output_data, output_filename)
+    except Exception as exc:
+        print("Oh noo, it's not working!", exc)
+        return
+
     print("Done! (Oops, I forgot to deal with `max_events` and `max_time`...)")
-    print(f"And for the curious minds... Found in {output_file}:")
-    with open(output_file, "r") as output:
+    print(f"And for the curious minds... Found in {output_filename}:")
+    with open(output_filename, "r") as output:
         print(output.read())
 
 
