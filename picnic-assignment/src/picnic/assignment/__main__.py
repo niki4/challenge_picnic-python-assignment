@@ -14,6 +14,7 @@ You can even rewrite / remove this docstring here.
 """
 
 import os
+import requests
 import sys
 
 from picnic.assignment.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
@@ -21,6 +22,10 @@ from picnic.assignment.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 
 def request_url(target_url: str) -> str:
     """Execute an HTTP request to a target URL."""
+    resp = requests.get(target_url)
+    print("DEBUG", "-"*10)
+    print("DEBUG Server response:", resp.text)
+    print("DEBUG", "-"*10)
     return f"Data from {target_url}."
 
 

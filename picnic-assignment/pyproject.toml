@@ -17,7 +17,7 @@ classifiers = [
 description = "Picnic Recruitment Python Assignment"
 dynamic = ["version", "readme"]
 dependencies = [
-
+    "requests == 2.31"
 ]
 
 [project.optional-dependencies]
