@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    logging:
+      driver: json-file
     environment:
       - PICNIC_SERVER_URL=http://picnic-interview-server:80
     depends_on:

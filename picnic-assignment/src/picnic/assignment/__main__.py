@@ -13,6 +13,7 @@ Please note that the provided CLI **does not** fully comply with the requested t
 You can even rewrite / remove this docstring here.
 """
 
+import logging
 import os
 import json
 import sys
@@ -23,7 +24,12 @@ import requests
 from picnic.assignment.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 
 
-def request_url(target_url: str) -> str:
+logging.basicConfig(format='%(levelname)s:\t%(asctime)s - %(message)s',
+                    level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
+def request_url(target_url: str) -> requests.Response:
     """Execute an HTTP request to a target URL."""
     response = requests.get(target_url)
     return response
@@ -48,8 +54,8 @@ def parse_server_response(raw_data: str) -> List[Dict[Any, Any]]:
     for event in data:
         try:
             parsed_event = json.loads(event)
-        except ValueError as exc:
-            print(f"DEBUG cannot parse {event}:", exc)
+        except ValueError:
+            logger.exception("Cannot parse %s.", event)
             continue
         result.append(parsed_event)
 
@@ -59,7 +65,8 @@ def parse_server_response(raw_data: str) -> List[Dict[Any, Any]]:
 def write_in_file(text: str, file_path: str) -> None:
     """Write a text in a file."""
     with open(file_path, "w") as file:
-        print(f"Writing {len(text)} characters to file {file_path}...")
+        logger.info("Writing %s characters to file %s...",
+                    len(text), file_path)
         file.write(text)
 
 
@@ -69,24 +76,27 @@ def main(max_events: int, max_time: int, target_server: str, output_filename: st
     """
 
     try:
+        logger.info("Start app main function...")
         response = request_url(target_server)
 
         input_data = parse_server_response(response.text)
-        print("DEBUG Parsed Server response (list of json's):", input_data)
-        print("DEBUG", "-"*10)
+        logger.debug("Parsed Server response (list of json's): %s",
+                     input_data)
 
         output_data: str = json.dumps(input_data)
-        print("DEBUG output_data:", output_data)
+        logger.debug("output_data: %s", output_data)
 
         write_in_file(output_data, output_filename)
-    except Exception as exc:
-        print("Oh noo, it's not working!", exc)
+    except Exception:
+        logger.exception("Oh noo, it's not working!")
         return
 
-    print("Done! (Oops, I forgot to deal with `max_events` and `max_time`...)")
-    print(f"And for the curious minds... Found in {output_filename}:")
+    # TODO: handle cmd arguments
+    logger.info("Done!"
+                "(Oops, I forgot to deal with `max_events` and `max_time`...)")
     with open(output_filename, "r") as output:
-        print(output.read())
+        logger.info("And for the curious minds... Found in %s: %s",
+                    output_filename, output.read())
 
 
 def entry():
