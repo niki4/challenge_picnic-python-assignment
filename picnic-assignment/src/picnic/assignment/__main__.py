@@ -13,10 +13,10 @@ Please note that the provided CLI **does not** fully comply with the requested t
 You can even rewrite / remove this docstring here.
 """
 
+import argparse
 import logging
 import os
 import json
-import sys
 from typing import List, Dict, Any
 
 import requests
@@ -24,7 +24,21 @@ import requests
 from picnic.assignment.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 
 
-logging.basicConfig(format='%(levelname)s:\t%(asctime)s - %(message)s',
+parser = argparse.ArgumentParser()
+# Positional arguments
+parser.add_argument("max_events", type=int,
+                    help="Max events to trigger the stop condition.")
+parser.add_argument("max_time", type=float,
+                    help="Max time in seconds to trigger the stop condition.")
+# Optional keyword arguments
+parser.add_argument("-o", "--output-file", type=str, default="output.json",
+                    help="Path to the output file.")
+parser.add_argument("-r", "--runs", type=int, default=1,
+                    help=("Number of times the Client calls the Server. "
+                          "If set to 0, the Client will call the Server "
+                          "indefinitely."))
+
+logging.basicConfig(format="%(levelname)s:\t%(asctime)s - %(message)s",
                     level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -38,9 +52,9 @@ def request_url(target_url: str) -> requests.Response:
 def parse_server_response(raw_data: str) -> List[Dict[Any, Any]]:
     """Parses server response containing Events data.
 
-    Each event comprises a single line of JSON.
-    Events are separated by a newline ('\n').
-    Not an event: Keep-alive messages consisting of a single '\n' may be sent.
+    * Each event comprises a single line of JSON.
+    * Events are separated by a newline ("\n").
+    * Not an event: Keep-alive messages consisting of a single "\n".
 
     Returns a list of parsed JSON events.
     """
@@ -70,7 +84,8 @@ def write_in_file(text: str, file_path: str) -> None:
         file.write(text)
 
 
-def main(max_events: int, max_time: int, target_server: str, output_filename: str) -> None:
+def main(target_server: str, max_events: int, max_time: int,
+         output_filename: str, num_runs: int) -> None:
     """Main function that handles requests to server, parsing and handling
     events data.
     """
@@ -104,19 +119,23 @@ def entry():
 
     The name of this function must not change.
     """
-    print(sys.argv)
-    if len(sys.argv) != 3:
-        print(f"Usage:\n {sys.argv[0]} <maxEvents> <maxTime>\n")
-        sys.exit(1)
+    args = parser.parse_args()
 
-    max_events: int = int(sys.argv[1])
-    max_time: int = int(sys.argv[2])
+    logger.info("Max events: %s", args.max_events)
+    logger.info("Max time: %s", args.max_time)
+    logger.info("Output file: %s", args.output_file)
+    logger.info("Number of runs: %s", args.runs)
+
     target_server: str = os.getenv(
         "PICNIC_SERVER_URL",
         f"{DEFAULT_SERVER_URL}:{DEFAULT_SERVER_PORT}",
     )
 
-    main(max_events, max_time, target_server, "output.json")
+    main(target_server,
+         args.max_events,
+         args.max_time,
+         output_filename=args.output_file,
+         num_runs=args.runs)
 
 
 if __name__ == "__main__":
