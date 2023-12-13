@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import logging
 import os
 import json
@@ -58,8 +59,9 @@ def handle_single_run(target_url: str, output_filename: str, run_id: int,
     processed_events, num_events_read = process_events(
         input_data, max_events_read_per_run)
 
-    sorted_events = processed_events  # TODO replace with call to sort_events
-    # sorted_events = sort_events(processed_events)
+    sorted_events = sort_by_pickers(processed_events)
+
+    clean_up_picker_ids(sorted_events)
 
     output_data: str = json.dumps(sorted_events)
     logger.debug("output_data: %s", output_data)
@@ -151,17 +153,49 @@ def process_events(events_list: List[Dict[Any, Any]],
     return collected_events, processed_events_count
 
 
-def sort_events(events: Dict[Any, Any]) -> List[Dict[Any, Any]]:
+def sort_by_pickers(events: Dict[Any, Any]) -> List[Dict[Any, Any]]:
     """Sort processed events in the following order:
 
-    * Pickers are sorted chronologically (ascending) by their active_since
+    Pickers are sorted chronologically (ascending) by their active_since
     timestamp, breaking ties by ID.
-    * The picks per picker must also be sorted chronologically, ascending.
-    (Note that events may not arrive in chronological order!)
-    * The article names are translated to uppercase, if need.
     """
-    # TODO: implement
-    pass
+
+    all_pickers = []
+    for picker_id, picker_data in events.items():
+        picker_name = picker_data["picker_name"]
+        active_since = picker_data["active_since"]
+        picks = picker_data["picks"]
+
+        all_pickers.append({
+            "picker_id": picker_id,
+            "picker_name": picker_name,
+            "active_since": active_since,
+            "picks": sort_picks_by_timestamp(picks)
+        })
+
+    # Sort the pickers by active_since and then by picker_id
+    return sorted(all_pickers,
+                  key=lambda picker: (
+                    datetime.strptime(
+                        picker["active_since"], "%Y-%m-%dT%H:%M:%SZ"),
+                    picker["picker_id"]))
+
+
+def sort_picks_by_timestamp(picks: List[Dict[Any, Any]]) -> List[Dict[Any, Any]]:
+    """Sort picks in chronological order, ascending.
+
+    (We need this since events may not arrive in chronological order.)
+    """
+    return sorted(picks,
+                  key=lambda pick: datetime.strptime(
+                      pick["timestamp"], "%Y-%m-%dT%H:%M:%SZ"))
+
+
+def clean_up_picker_ids(events: List[Dict[Any, Any]]):
+    """Removes picker_id rows from events data."""
+    for event in events:
+        if "picker_id" in event:
+            del event["picker_id"]
 
 
 def write_in_file(text: str, file_path: str) -> None:
