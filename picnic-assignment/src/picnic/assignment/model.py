@@ -13,8 +13,11 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def handle_single_run(target_url: str, output_filename: str, run_id: int,
-                      max_events_read_per_run: int) -> (float, int):
+def handle_single_run(target_url: str,
+                      output_filename: str,
+                      run_id: int,
+                      max_events_read_per_run: int,
+                      timeout_after_sec: float) -> (float, int):
     """Handles a single run of the client, consisting of following steps:
 
     1. GET data from target URL
@@ -35,7 +38,8 @@ def handle_single_run(target_url: str, output_filename: str, run_id: int,
     """
     begin = time.time()
 
-    response = request_url(target_url)
+    response = request_url(target_url, timeout_after_sec)
+    response.raise_for_status()
 
     input_data = parse_server_response(response.text)
 
@@ -59,9 +63,9 @@ def handle_single_run(target_url: str, output_filename: str, run_id: int,
     return time_spent, num_events_read
 
 
-def request_url(target_url: str) -> requests.Response:
+def request_url(target_url: str, timeout: float) -> requests.Response:
     """Execute an HTTP request to a target URL."""
-    response = requests.get(target_url)
+    response = requests.get(target_url, timeout=timeout)
     return response
 
 
@@ -212,7 +216,8 @@ def handle_continuous_run(target_server: str, max_events: int, max_time: int,
                 target_server,
                 output_filename,
                 run_id,
-                max_events_left_to_read)
+                max_events_left_to_read,
+                max_time)
 
             total_time_elapsed += time_spent
             total_events_handled += events_read_in_run
