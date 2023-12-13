@@ -174,56 +174,40 @@ def write_in_file(text: str, file_path: str) -> None:
         file.write(text)
 
 
-def main(target_server: str, max_events: int, max_time: int,
-         output_filename: str, num_runs: int) -> None:
-    """Main function that handles requests to server, parsing and handling
-    events data.
-    """
+def handle_continuous_run(target_server: str, max_events: int, max_time: int,
+                          output_filename: str, num_runs: int) -> None:
+    """Handles requests to server, parsing and handling events data."""
+
     logger.info("Start app main function...")
     total_events_handled = 0
     total_time_elapsed = 0
+    run_id = 0
 
     try:
         if num_runs == 0:
-            run_id = 0
-            while True:
-                max_events_left_to_read = max_events - total_events_handled
+            logger.info("Processing runs indefinitely.")
+            num_runs = float('+inf')
 
-                time_spent, events_read_in_run = handle_single_run(
-                    target_server,
-                    output_filename,
-                    run_id,
-                    max_events_left_to_read)
+        while run_id < num_runs:
+            max_events_left_to_read = max_events - total_events_handled
 
-                total_time_elapsed += time_spent
-                total_events_handled += events_read_in_run
+            time_spent, events_read_in_run = handle_single_run(
+                target_server,
+                output_filename,
+                run_id,
+                max_events_left_to_read)
 
-                if total_time_elapsed >= max_time:
-                    logger.info("Processing stopped: max time exceeded.")
-                    break
-                if total_events_handled >= max_events:
-                    logger.info("Processing stopped: max events exceeded.")
-                    break
-                run_id += 1
-        else:
-            for run_id in range(num_runs):
-                max_events_left_to_read = max_events - total_events_handled
+            total_time_elapsed += time_spent
+            total_events_handled += events_read_in_run
 
-                time_spent, events_read_in_run = handle_single_run(
-                    target_server,
-                    output_filename,
-                    run_id,
-                    max_events_left_to_read)
+            if total_time_elapsed >= max_time:
+                logger.info("Processing stopped: max time exceeded.")
+                break
+            if total_events_handled >= max_events:
+                logger.info("Processing stopped: max events exceeded.")
+                break
 
-                total_time_elapsed += time_spent
-                total_events_handled += events_read_in_run
-
-                if total_time_elapsed >= max_time:
-                    logger.info("Processing stopped: max time exceeded.")
-                    break
-                if total_events_handled >= max_events:
-                    logger.info("Processing stopped: max events exceeded.")
-                    break
+            run_id += 1
     except Exception:
         logger.exception("Oh no, something went wrong!")
         return
@@ -248,11 +232,12 @@ def entry():
         f"{DEFAULT_SERVER_URL}:{DEFAULT_SERVER_PORT}",
     )
 
-    main(target_server,
-         args.max_events,
-         args.max_time,
-         output_filename=args.output_file,
-         num_runs=args.runs)
+    handle_continuous_run(
+        target_server,
+        args.max_events,
+        args.max_time,
+        output_filename=args.output_file,
+        num_runs=args.runs)
 
 
 if __name__ == "__main__":

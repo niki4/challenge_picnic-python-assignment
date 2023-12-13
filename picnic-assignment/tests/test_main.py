@@ -6,7 +6,7 @@ from typing import Protocol, TypeVar
 from unittest.mock import Mock, patch
 
 import pytest
-from picnic.assignment.__main__ import main
+from picnic.assignment.__main__ import handle_continuous_run
 
 _T_co = TypeVar("_T_co", covariant=True)
 
@@ -53,6 +53,7 @@ class TestMain:
 
         with open(input_stream, "rb") as json_stream:
             mock_urlopen.return_value = Mock(read=json_stream.read)
+            main = handle_continuous_run
             main(100, 30, "mock://server.com:80", str(result_path))
 
         with (
