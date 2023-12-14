@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Protocol, TypeVar
 
 import pytest
+
 from picnic.assignment.__main__ import handle_continuous_run
 
 _T_co = TypeVar("_T_co", covariant=True)

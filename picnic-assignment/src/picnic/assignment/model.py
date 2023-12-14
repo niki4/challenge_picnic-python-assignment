@@ -179,7 +179,7 @@ def sort_picks_by_timestamp(picks: List[Dict[Any, Any]]) -> List[Dict[Any, Any]]
 
 
 def clean_up_picker_ids(events: List[Dict[Any, Any]]):
-    """Removes picker_id rows from events data."""
+    """Removes picker_id rows from events data in place."""
     for event in events:
         if "picker_id" in event:
             del event["picker_id"]
