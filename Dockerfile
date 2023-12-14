@@ -10,9 +10,12 @@ COPY --chown=picnic:teampicnic picnic-assignment /home/picnic/picnic-assignment
 
 WORKDIR /home/picnic/picnic-assignment
 
-## Install and test.
-RUN pip install ".[test]" && pytest
+## Install stage
+RUN pip install ".[test]"
 
-# Run the app with max_events = 100 messages, max_time = 30 seconds.
+## Test stage
+RUN pytest
+
+## Run stage
 ENTRYPOINT ["event-process"]
-CMD ["100", "30"]
+CMD ["100", "30"]  # max_events = 100 messages, max_time = 30 seconds
