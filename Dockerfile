@@ -13,4 +13,6 @@ WORKDIR /home/picnic/picnic-assignment
 ## Install and test.
 RUN pip install ".[test]" && pytest
 
+# Run the app with max_events = 100 messages, max_time = 30 seconds.
 ENTRYPOINT ["event-process"]
+CMD ["100", "30"]
