@@ -3,10 +3,10 @@
 import json
 from pathlib import Path
 from typing import Protocol, TypeVar
-from unittest.mock import Mock, patch
 
 import pytest
-from picnic.assignment.__main__ import main
+
+from picnic.assignment.__main__ import handle_continuous_run
 
 _T_co = TypeVar("_T_co", covariant=True)
 
@@ -22,12 +22,8 @@ def get_normalized_form(fp: SupportsRead[str | bytes]) -> str:
 
 
 class TestMain:
-    def test_one(self):
-        assert True
 
-    @pytest.mark.skip("Try to make this work ;-)")
-    @patch("urllib.request.urlopen")
-    def test_happy_path(self, mock_urlopen: Mock, tmp_path: Path) -> None:
+    def test_happy_path(self, requests_mock, tmp_path: Path) -> None:
         """Test `Happy Path`.
 
         The test succeeds if:
@@ -41,19 +37,16 @@ class TestMain:
                          │
                          ▼
                happy-path-output.json
-
-        Note:
-            Feel free to change the patched function(s) if you use a different library
-            to do HTTP calls.
         """
         result_path = tmp_path / "result.json"
         resources = Path("tests", "resources")
         input_stream = resources / "happy-path-input.json-stream"
         output_expected = resources / "happy-path-output.json"
 
-        with open(input_stream, "rb") as json_stream:
-            mock_urlopen.return_value = Mock(read=json_stream.read)
-            main(100, 30, "mock://server.com:80", str(result_path))
+        with open(input_stream, "r") as json_stream:
+            requests_mock.get("http://server.com:80", text=json_stream.read())
+            main = handle_continuous_run
+            main("http://server.com:80", 100, 30, str(result_path), 1)
 
         with (
             open(result_path, "r") as result_tmp_file,
